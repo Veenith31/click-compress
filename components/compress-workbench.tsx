@@ -159,6 +159,15 @@ export function CompressWorkbench() {
       return { downloadUrl: url, note: input.note, savedToAccount: false };
     }
 
+    if (input.blob.size > CLOUD_MAX_UPLOAD_BYTES) {
+      const url = URL.createObjectURL(input.blob);
+      return {
+        downloadUrl: url,
+        note: `${input.note} Download locally — files over 4 MB cannot be saved to My Files on cloud hosting.`,
+        savedToAccount: false,
+      };
+    }
+
     setProgress(98, "Encrypting and saving to your account…");
     const fd = new FormData();
     fd.append(
@@ -174,21 +183,30 @@ export function CompressWorkbench() {
     fd.append("method", input.method);
     fd.append("note", input.note);
 
-    const saved = await saveUserFileAction(fd);
-    if (!saved.ok) {
+    try {
+      const saved = await saveUserFileAction(fd);
+      if (!saved.ok) {
+        const url = URL.createObjectURL(input.blob);
+        return {
+          downloadUrl: url,
+          note: `${input.note} (Could not save to account — download locally.)`,
+          savedToAccount: false,
+        };
+      }
+
+      return {
+        downloadUrl: saved.downloadPath,
+        note: `${input.note} Saved securely to My Files (encrypted at rest).`,
+        savedToAccount: true,
+      };
+    } catch {
       const url = URL.createObjectURL(input.blob);
       return {
         downloadUrl: url,
-        note: `${input.note} (Could not save to account — download locally.)`,
+        note: `${input.note} Download locally — cloud save failed (file may exceed server limit).`,
         savedToAccount: false,
       };
     }
-
-    return {
-      downloadUrl: saved.downloadPath,
-      note: `${input.note} Saved securely to My Files (encrypted at rest).`,
-      savedToAccount: true,
-    };
   }
 
   function shouldUseCompressionWorker(): boolean {

@@ -1,6 +1,8 @@
 /** Maps internal compression method ids to user-safe labels (no library names). */
 export function userFacingMethod(method: string): string {
+  if (method === "video-pass-through") return "Video (already optimized)";
   if (method.startsWith("video")) return "Video compression";
+  if (method.startsWith("audio")) return "Audio compression";
   if (method.startsWith("pdf")) return "PDF optimization";
   if (method.startsWith("image")) return "Image optimization";
   if (method.startsWith("office") || method.startsWith("generic")) {

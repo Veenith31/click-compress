@@ -516,3 +516,12 @@ export function isVideoFile(file: File): boolean {
   if (file.type.startsWith("video/")) return true;
   return /\.(mp4|mov|mkv|avi|webm|m4v)$/i.test(file.name);
 }
+
+export function isAudioFile(file: File): boolean {
+  if (file.type.startsWith("audio/")) return true;
+  return /\.(wav|mp3|flac|ogg|m4a|aac)$/i.test(file.name);
+}
+
+export function isWorkerMediaFile(file: File): boolean {
+  return isPdfFile(file) || isVideoFile(file) || isAudioFile(file);
+}

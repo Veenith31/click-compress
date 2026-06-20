@@ -25,8 +25,10 @@ import {
   compressImageTowardTarget,
   compressVideoInBrowser,
   formatBytes,
+  isAudioFile,
   isPdfFile,
   isVideoFile,
+  isWorkerMediaFile,
   targetBytesFor,
   TARGET_SAVINGS_RATIO,
   videoProgressToPercent,
@@ -109,6 +111,9 @@ export function CompressWorkbench() {
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const acceptHint = useMemo(() => {
+    if (useDirectCompressionWorker()) {
+      return ".pdf,.mp4,.mov,.mkv,.avi,.webm,.m4v,.wav,.mp3,.flac,.ogg,.m4a,video/*,audio/*";
+    }
     if (profile === "media") return "video/*,audio/*,image/*";
     if (profile === "text") return ".txt,.csv,.json,.xml,.md,.log";
     return "";
@@ -209,9 +214,16 @@ export function CompressWorkbench() {
     }
   }
 
+  function workerProgressLabel(file: File): string {
+    if (isPdfFile(file)) return "Compressing on GCP worker (Ghostscript)…";
+    if (isVideoFile(file)) return "Compressing on GCP worker (FFmpeg video)…";
+    if (isAudioFile(file)) return "Compressing on GCP worker (FFmpeg audio)…";
+    return "Compressing on GCP worker…";
+  }
+
   function shouldUseCompressionWorker(): boolean {
     if (!file || !useDirectCompressionWorker()) return false;
-    return isPdfFile(file) || isVideoFile(file);
+    return isWorkerMediaFile(file);
   }
 
   function usesNativeServerPipeline(): boolean {
@@ -246,15 +258,16 @@ export function CompressWorkbench() {
       setProgress(
         10,
         shouldUseCompressionWorker()
-          ? "Uploading to compression worker (Ghostscript)…"
+          ? "Preparing PDF upload to GCP worker…"
           : smartAi && aiStatus?.configured
             ? "Smart routing + PDF optimization…"
             : "Optimizing PDF…",
       );
-    } else if (isVideoFile(file) && shouldUseCompressionWorker()) {
-      setProgress(10, "Uploading to compression worker (FFmpeg)…");
+    } else if (shouldUseCompressionWorker() && isVideoFile(file)) {
+      setProgress(10, "Preparing video upload to GCP worker…");
+    } else if (shouldUseCompressionWorker() && isAudioFile(file)) {
+      setProgress(10, "Preparing audio upload to GCP worker…");
     }
-    startServerProgressTimer();
 
     if (shouldUseCompressionWorker()) {
       const workerMaxBytes = 25 * 1024 * 1024;
@@ -264,7 +277,7 @@ export function CompressWorkbench() {
         );
       }
 
-      setProgress(8, "Connecting to GCP compression worker…");
+      setProgress(5, "Connecting to GCP compression worker…");
 
       const workerReady = await checkCompressionWorkerHealth();
       if (!workerReady) {
@@ -273,21 +286,15 @@ export function CompressWorkbench() {
         );
       }
 
-      if (isPdfFile(file)) {
-        setProgress(30, "Uploading PDF to compression worker (Ghostscript)…");
-      } else if (isVideoFile(file)) {
-        setProgress(30, "Uploading video to compression worker (FFmpeg)…");
-      }
+      const processLabel = workerProgressLabel(file);
 
-      let workerResult;
-      try {
-        workerResult = await compressViaWorker(nativeFd);
-      } catch {
-        throw new Error(
-          "Could not reach the compression worker. It may still be waking up — try again in a minute.",
-        );
-      }
-      stopServerProgressTimer();
+      const workerResult = await compressViaWorker(nativeFd, (update) => {
+        if (update.phase === "process") {
+          setProgress(update.percent, processLabel);
+          return;
+        }
+        setProgress(update.percent, update.label);
+      });
 
       if (!workerResult.ok) {
         throw new Error(workerResult.error);
@@ -331,6 +338,8 @@ export function CompressWorkbench() {
       });
       return;
     }
+
+    startServerProgressTimer();
 
     let nativeResult;
     try {
@@ -669,14 +678,14 @@ export function CompressWorkbench() {
             common players. Large files may take a few minutes.
             {useDirectCompressionWorker() && (
               <span className="block mt-2 text-amber-400/90">
-                GCP worker (always on): max 25 MB per file. PDF uses Ghostscript,
-                video uses FFmpeg on compression.clickcompress.com.
+                GCP worker (always on): PDF, MP4/MOV video, WAV/MP3 audio — max
+                25 MB per file. Progress shows upload → compress → download.
               </span>
             )}
             {file && isPdfFile(file) && isProductionHost() && (
               <span className="block mt-2 text-amber-400/90">
                 {useDirectCompressionWorker()
-                  ? "PDF Ghostscript runs on the GCP compression worker."
+                  ? "PDF uses high-compression Ghostscript (/screen) on GCP."
                   : "PDF Ghostscript runs on your Mac only — on clickcompress.com we use browser lossless compression instead."}
               </span>
             )}

@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { STEPS } from "@/lib/site-content";
+import { buildPageMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "How it works | Click-Compress",
-  description: "Learn how Click-Compress analyzes and optimizes your files.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "How File Compression Works — PDF, Video & Data",
+  description:
+    "Learn how Click-Compress analyzes uploads and routes PDF, video, document, and data files to the best compression path.",
+  path: "/how-it-works",
+});
 
 export default function HowItWorksPage() {
   return (

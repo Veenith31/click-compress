@@ -9,6 +9,14 @@ import { CompressionFlowStrip } from "@/components/compression-flow-strip";
 import { CompressionHeroAnimation } from "@/components/compression-hero-animation";
 import { PageShell } from "@/components/page-shell";
 import { CAPABILITIES, SITE, STATS } from "@/lib/site-content";
+import { SEO_LANDING_LINKS } from "@/lib/seo-landing-pages";
+
+const CAPABILITY_LINKS: Record<string, string> = {
+  Video: "/video-compressor",
+  PDF: "/pdf-compressor",
+  Documents: "/doc-compressor",
+  "Text & data": "/data-compressor",
+};
 
 export function HomePageClient() {
   return (
@@ -31,9 +39,10 @@ export function HomePageClient() {
                 </span>
               </h1>
               <p className="mt-4 sm:mt-6 max-w-xl text-base sm:text-lg text-gray-400">
-                {SITE.name} routes each upload to the right compression path for
-                video, PDF, images, and text — automatically. Watch how your
-                file flows through the pipeline below.
+                {SITE.name} is a free online file compressor for PDF, video,
+                documents, and data — routes each upload to the right path
+                automatically. Watch how your file flows through the pipeline
+                below.
               </p>
               <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
                 <Link
@@ -123,6 +132,25 @@ export function HomePageClient() {
       </section>
 
       <PageShell>
+        <div className="mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold">Popular free compressors</h2>
+          <p className="mt-2 text-gray-400 max-w-xl">
+            Dedicated tools for the file types people search for most.
+          </p>
+          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {SEO_LANDING_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-2xl border border-cyan-900/40 bg-cyan-950/20 p-5 hover:border-cyan-500/40 transition-colors"
+              >
+                <p className="font-semibold text-white">{link.label}</p>
+                <p className="mt-1 text-xs text-cyan-400/90">Free online →</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold">What we compress</h2>
@@ -140,21 +168,45 @@ export function HomePageClient() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {CAPABILITIES.slice(0, 6).map((cap) => (
-            <article
-              key={cap.title}
-              className="rounded-2xl border border-white/10 bg-zinc-900/30 p-6 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <h3 className="text-lg font-semibold">{cap.title}</h3>
-              <p className="mt-1 text-xs text-gray-500">{cap.formats}</p>
-              <p className="mt-3 text-sm text-gray-400 line-clamp-2">
-                {cap.description}
-              </p>
-              <p className="mt-4 text-xs text-emerald-400/90">
-                Typical savings: {cap.savings}
-              </p>
-            </article>
-          ))}
+          {CAPABILITIES.slice(0, 6).map((cap) => {
+            const href = CAPABILITY_LINKS[cap.title];
+            const inner = (
+              <>
+                <h3 className="text-lg font-semibold">{cap.title}</h3>
+                <p className="mt-1 text-xs text-gray-500">{cap.formats}</p>
+                <p className="mt-3 text-sm text-gray-400 line-clamp-2">
+                  {cap.description}
+                </p>
+                <p className="mt-4 text-xs text-emerald-400/90">
+                  Typical savings: {cap.savings}
+                </p>
+                {href && (
+                  <p className="mt-3 text-xs text-cyan-400/90">Learn more →</p>
+                )}
+              </>
+            );
+
+            if (!href) {
+              return (
+                <article
+                  key={cap.title}
+                  className="rounded-2xl border border-white/10 bg-zinc-900/30 p-6 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  {inner}
+                </article>
+              );
+            }
+
+            return (
+              <Link
+                key={cap.title}
+                href={href}
+                className="rounded-2xl border border-white/10 bg-zinc-900/30 p-6 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 block"
+              >
+                {inner}
+              </Link>
+            );
+          })}
         </div>
       </PageShell>
 

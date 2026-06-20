@@ -2,12 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { CAPABILITIES, MODES } from "@/lib/site-content";
+import { SEO_LANDING_LINKS } from "@/lib/seo-landing-pages";
+import { buildPageMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Capabilities | Click-Compress",
+export const metadata: Metadata = buildPageMetadata({
+  title: "File Compression Capabilities — PDF, Video, Data & Office",
   description:
-    "Supported file types, compression methods, and expected savings.",
-};
+    "See every file type Click-Compress supports: PDF compressor, video compressor, document compressor, data/text compression, and images.",
+  path: "/capabilities",
+  keywords: [
+    "file compression capabilities",
+    "supported file types",
+    "pdf video document compressor",
+  ],
+});
 
 export default function CapabilitiesPage() {
   return (
@@ -60,6 +68,24 @@ export default function CapabilitiesPage() {
               <h3 className="font-semibold">{mode.name}</h3>
               <p className="mt-2 text-sm text-gray-400">{mode.summary}</p>
             </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-14 rounded-2xl border border-white/10 bg-zinc-900/30 p-6 sm:p-8">
+        <h2 className="text-lg font-bold">Free online compressors</h2>
+        <p className="mt-2 text-sm text-gray-400">
+          Dedicated pages for the most common compression tasks:
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {SEO_LANDING_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-full border border-cyan-800/50 bg-cyan-950/30 px-4 py-2 text-sm text-cyan-300 hover:border-cyan-500/50 hover:text-white transition-colors"
+            >
+              {link.label}
+            </Link>
           ))}
         </div>
       </div>

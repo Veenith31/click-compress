@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { SITE } from "@/lib/site-content";
+import { buildPageMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "About | Click-Compress",
-  description: "About Click-Compress — mission, approach, and privacy.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "About Click-Compress — Free Online File Compressor",
+  description:
+    "Click-Compress is a free online file compressor for PDF, video, Office documents, and structured data — privacy-first and format-aware.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

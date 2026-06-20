@@ -1,5 +1,6 @@
 import { siteUrl } from "@/lib/env";
 import { SITE } from "@/lib/site-content";
+import type { SeoFaq } from "@/lib/seo-landing-pages";
 
 export function WebSiteJsonLd() {
   const url = siteUrl();
@@ -9,11 +10,47 @@ export function WebSiteJsonLd() {
     name: SITE.name,
     url,
     description: SITE.description,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${url}/compress`,
-      "query-input": "required name=search_term_string",
-    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+export function OrganizationJsonLd() {
+  const url = siteUrl();
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE.name,
+    url,
+    logo: `${url}${SITE.logoIcon}`,
+    description: SITE.description,
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+export function FaqPageJsonLd({ faqs }: { faqs: SeoFaq[] }) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
   };
 
   return (
@@ -39,6 +76,12 @@ export function SoftwareApplicationJsonLd() {
       price: "0",
       priceCurrency: "USD",
     },
+    featureList: [
+      "PDF compressor",
+      "Video compressor",
+      "Document compressor",
+      "Data and text file compressor",
+    ],
   };
 
   return (

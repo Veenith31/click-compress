@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth-server";
 import {
+  OrganizationJsonLd,
   SoftwareApplicationJsonLd,
   WebSiteJsonLd,
 } from "@/components/structured-data";
@@ -31,23 +32,23 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: `${SITE.name} | Free Online File Compression — PDF, Video, Images`,
+    default: `${SITE.name} | Free PDF, Video & Data Compressor Online`,
     template: `%s | ${SITE.name}`,
   },
   description:
-    "Compress PDF, video, and images online for free. Click-Compress targets 40%+ savings with smart format-aware compression. Secure accounts with encrypted file storage.",
+    "Free online file compressor for PDF, video, documents, and data. Compress MP4, PDF, DOCX, CSV, and JSON — target 40%+ savings with smart format-aware compression.",
   keywords: [
-    "file compression",
-    "compress PDF online",
+    "file compressor",
+    "pdf compressor",
+    "video compressor",
+    "doc compressor",
+    "data compressor",
+    "compress pdf online free",
     "compress video online",
-    "image compression",
-    "lossless compression",
-    "free file compressor",
+    "compress csv json",
+    "free file compression",
     "Click-Compress",
   ],
-  alternates: {
-    canonical: "/",
-  },
   icons: {
     icon: [
       { url: "/logo-icon.png", type: "image/png" },
@@ -61,13 +62,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl(),
     siteName: SITE.name,
-    title: `${SITE.name} | Smart Compression Platform`,
+    title: `${SITE.name} | Free PDF, Video & Data Compressor`,
     description: SITE.description,
     images: [{ url: SITE.logo, width: 512, height: 512, alt: SITE.name }],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE.name} | Smart Compression Platform`,
+    title: `${SITE.name} | Free PDF, Video & Data Compressor`,
     description: SITE.description,
     images: [SITE.logo],
   },
@@ -80,6 +81,9 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  },
+  verification: {
+    google: "0GinUmkY9h-L0URSgamQNw063LRbayxayMej9TEM3iQ",
   },
 };
 
@@ -97,6 +101,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-black text-white font-sans">
         <WebSiteJsonLd />
+        <OrganizationJsonLd />
         <SoftwareApplicationJsonLd />
         <AuthProvider initialUser={user}>
           <SiteHeader />

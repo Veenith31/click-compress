@@ -25,6 +25,28 @@ type WakeOptions = {
   onWaiting?: (secondsElapsed: number) => void;
 };
 
+function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
+function fetchErrorMessage(error: unknown): string {
+  if (error instanceof DOMException && error.name === "TimeoutError") {
+    return "Compression timed out. Try a smaller file or retry.";
+  }
+  if (error instanceof TypeError) {
+    return "Network error reaching the worker (CORS, cold start, or file too large). Wait 60s and retry.";
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Could not reach the compression worker.";
+}
+
 /** Ping /health until the worker responds (handles Render free-tier cold starts). */
 export async function wakeCompressionWorker(
   options: WakeOptions = {},
@@ -32,7 +54,7 @@ export async function wakeCompressionWorker(
   const base = compressionWorkerUrl();
   if (!base) return false;
 
-  const maxWaitMs = options.maxWaitMs ?? 90_000;
+  const maxWaitMs = options.maxWaitMs ?? 120_000;
   const started = Date.now();
   let attempt = 0;
 
@@ -44,7 +66,7 @@ export async function wakeCompressionWorker(
     try {
       const response = await fetch(`${base}/health`, {
         cache: "no-store",
-        signal: AbortSignal.timeout(20_000),
+        signal: timeoutSignal(25_000),
       });
       if (response.ok) return true;
     } catch {
@@ -59,6 +81,47 @@ export async function wakeCompressionWorker(
   return false;
 }
 
+async function postCompressOnce(
+  base: string,
+  formData: FormData,
+): Promise<WorkerCompressResult> {
+  const response = await fetch(`${base}/compress`, {
+    method: "POST",
+    body: formData,
+    signal: timeoutSignal(600_000),
+  });
+
+  if (!response.ok) {
+    let message = `Worker error (${response.status})`;
+    try {
+      const json = (await response.json()) as { error?: string };
+      if (json.error) message = json.error;
+    } catch {
+      /* binary error body */
+    }
+    return { ok: false, error: message };
+  }
+
+  const blob = await response.blob();
+  const outputName = response.headers.get("X-Output-Name") ?? "compressed.bin";
+  const method = response.headers.get("X-Method") ?? "compressed";
+  const note = response.headers.get("X-Note") ?? "Compressed on worker.";
+  const originalSize = Number(response.headers.get("X-Original-Size") ?? 0);
+  const compressedSize = Number(
+    response.headers.get("X-Compressed-Size") ?? blob.size,
+  );
+
+  return {
+    ok: true,
+    blob,
+    outputName,
+    method,
+    note,
+    originalSize: originalSize || blob.size,
+    compressedSize: compressedSize || blob.size,
+  };
+}
+
 export async function compressViaWorker(
   formData: FormData,
 ): Promise<WorkerCompressResult> {
@@ -67,55 +130,31 @@ export async function compressViaWorker(
     return { ok: false, error: "Compression worker URL is not configured." };
   }
 
-  try {
-    const response = await fetch(`${base}/compress`, {
-      method: "POST",
-      body: formData,
-      signal: AbortSignal.timeout(600_000),
-    });
-
-    if (!response.ok) {
-      let message = `Worker error (${response.status})`;
-      try {
-        const json = (await response.json()) as { error?: string };
-        if (json.error) message = json.error;
-      } catch {
-        /* binary error body */
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0) {
+      const awake = await wakeCompressionWorker({ maxWaitMs: 90_000 });
+      if (!awake) {
+        return {
+          ok: false,
+          error:
+            "Worker did not wake up for retry. Wait a minute and try again.",
+        };
       }
-      return { ok: false, error: message };
     }
 
-    const blob = await response.blob();
-    const outputName =
-      response.headers.get("X-Output-Name") ?? "compressed.bin";
-    const method = response.headers.get("X-Method") ?? "compressed";
-    const note = response.headers.get("X-Note") ?? "Compressed on worker.";
-    const originalSize = Number(response.headers.get("X-Original-Size") ?? 0);
-    const compressedSize = Number(
-      response.headers.get("X-Compressed-Size") ?? blob.size,
-    );
-
-    return {
-      ok: true,
-      blob,
-      outputName,
-      method,
-      note,
-      originalSize: originalSize || blob.size,
-      compressedSize: compressedSize || blob.size,
-    };
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "TimeoutError") {
-      return {
-        ok: false,
-        error:
-          "Compression timed out. Try a smaller file or retry — the worker may still be waking up.",
-      };
+    try {
+      return await postCompressOnce(base, formData);
+    } catch (error) {
+      if (attempt === 0) {
+        continue;
+      }
+      return { ok: false, error: fetchErrorMessage(error) };
     }
-    return {
-      ok: false,
-      error:
-        "Could not reach the compression worker. It may be waking up (free tier) — wait a minute and try again.",
-    };
   }
+
+  return {
+    ok: false,
+    error:
+      "Could not reach the compression worker. Wait 60s and try again (Render free tier cold start).",
+  };
 }

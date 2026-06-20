@@ -239,6 +239,13 @@ export function CompressWorkbench() {
     startServerProgressTimer();
 
     if (shouldUseCompressionWorker()) {
+      const workerMaxBytes = 25 * 1024 * 1024;
+      if (file.size > workerMaxBytes) {
+        throw new Error(
+          `File is ${formatBytes(file.size)} — Render free worker limit is 25 MB. Try a smaller PDF/video or use Target 40% mode for images.`,
+        );
+      }
+
       setProgress(5, "Connecting to compression worker…");
 
       const workerReady = await wakeCompressionWorker({
@@ -652,6 +659,12 @@ export function CompressWorkbench() {
           <p className="text-xs text-purple-400/90 rounded-lg border border-purple-900/50 bg-purple-950/20 p-3">
             Uses the high-impact local path. Video outputs stay compatible with
             common players. Large files may take a few minutes.
+            {useDirectCompressionWorker() && (
+              <span className="block mt-2 text-amber-400/90">
+                Free Render worker: max 25 MB per file. First request after 15
+                min idle may take up to 60s to wake up.
+              </span>
+            )}
             {file && isPdfFile(file) && isProductionHost() && (
               <span className="block mt-2 text-amber-400/90">
                 {useDirectCompressionWorker()

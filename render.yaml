@@ -12,6 +12,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: WORKER_MAX_UPLOAD_MB
-        value: "30"
+        value: "25"
       - key: WORKER_ALLOWED_ORIGINS
         value: https://clickcompress.com,https://www.clickcompress.com,http://localhost:3000

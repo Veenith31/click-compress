@@ -1,8 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
 
 const MAX_BYTES = Number(process.env.WORKER_MAX_UPLOAD_MB ?? 100) * 1024 * 1024;
 
@@ -46,7 +46,7 @@ function compressVideo(inputPath, outPath) {
     "-c:v",
     "libx264",
     "-preset",
-    "medium",
+    "ultrafast",
     "-crf",
     "28",
     "-c:a",
@@ -60,11 +60,13 @@ function compressVideo(inputPath, outPath) {
 }
 
 export async function compressUploadedFile(file) {
-  if (!file?.buffer?.length) {
+  if (!file?.path) {
     throw new Error("No file uploaded.");
   }
   if (file.size > MAX_BYTES) {
-    throw new Error(`File exceeds worker limit (${process.env.WORKER_MAX_UPLOAD_MB ?? 100} MB).`);
+    throw new Error(
+      `File exceeds worker limit (${process.env.WORKER_MAX_UPLOAD_MB ?? 100} MB).`,
+    );
   }
 
   const ext = extOf(file.originalname);
@@ -75,8 +77,6 @@ export async function compressUploadedFile(file) {
   const safeBase = path
     .basename(file.originalname, ext || undefined)
     .replace(/[^a-zA-Z0-9._-]/g, "_");
-  const inputPath = path.join(tmpRoot, `${safeBase}${ext || ""}`);
-  fs.writeFileSync(inputPath, file.buffer);
 
   let outputPath = "";
   let outputName = "";
@@ -87,13 +87,13 @@ export async function compressUploadedFile(file) {
     if (ext === ".pdf") {
       outputName = `${safeBase}_compressed.pdf`;
       outputPath = path.join(tmpRoot, outputName);
-      compressPdf(inputPath, outputPath);
+      compressPdf(file.path, outputPath);
       method = "pdf-lossy-gs-ebook";
       note = "PDF optimized with Ghostscript on compression worker.";
     } else if ([".mp4", ".mov", ".mkv", ".avi"].includes(ext)) {
       outputName = `${safeBase}_compressed.mp4`;
       outputPath = path.join(tmpRoot, outputName);
-      compressVideo(inputPath, outputPath);
+      compressVideo(file.path, outputPath);
       method = "video-h264";
       note = "Video re-encoded with FFmpeg on compression worker.";
     } else {
@@ -114,7 +114,8 @@ export async function compressUploadedFile(file) {
         : "0";
 
     return {
-      buffer: fs.readFileSync(outputPath),
+      outputPath,
+      tmpRoot,
       outputName,
       method,
       note: `${note} Saved ${savedPct}%.`,
@@ -122,11 +123,26 @@ export async function compressUploadedFile(file) {
       compressedSize,
       mimeType: ext === ".pdf" ? "application/pdf" : "video/mp4",
     };
-  } finally {
+  } catch (error) {
     try {
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     } catch {
       /* ignore cleanup errors */
     }
+    throw error;
+  } finally {
+    try {
+      fs.unlinkSync(file.path);
+    } catch {
+      /* ignore uploaded temp file cleanup */
+    }
+  }
+}
+
+export function cleanupJobDir(tmpRoot) {
+  try {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  } catch {
+    /* ignore cleanup errors */
   }
 }

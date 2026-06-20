@@ -12,6 +12,11 @@ import {
   userFacingMethod,
 } from "@/lib/user-facing-labels";
 import {
+  compressViaWorker,
+  useDirectCompressionWorker,
+  wakeCompressionWorker,
+} from "@/lib/compression-worker-client";
+import {
   CLOUD_MAX_UPLOAD_BYTES,
   isProductionHost,
 } from "@/lib/upload-limits";
@@ -186,8 +191,14 @@ export function CompressWorkbench() {
     };
   }
 
+  function shouldUseCompressionWorker(): boolean {
+    if (!file || !useDirectCompressionWorker()) return false;
+    return isPdfFile(file) || isVideoFile(file);
+  }
+
   function usesNativeServerPipeline(): boolean {
     if (!file) return false;
+    if (shouldUseCompressionWorker()) return true;
     if (isProductionHost()) {
       if (isPdfFile(file)) return false;
       if (file.size > CLOUD_MAX_UPLOAD_BYTES) return false;
@@ -216,12 +227,95 @@ export function CompressWorkbench() {
     if (isPdfFile(file)) {
       setProgress(
         10,
-        smartAi && aiStatus?.configured
-          ? "Smart routing + PDF optimization…"
-          : "Optimizing PDF…",
+        shouldUseCompressionWorker()
+          ? "Uploading to compression worker (Ghostscript)…"
+          : smartAi && aiStatus?.configured
+            ? "Smart routing + PDF optimization…"
+            : "Optimizing PDF…",
       );
+    } else if (isVideoFile(file) && shouldUseCompressionWorker()) {
+      setProgress(10, "Uploading to compression worker (FFmpeg)…");
     }
     startServerProgressTimer();
+
+    if (shouldUseCompressionWorker()) {
+      setProgress(5, "Connecting to compression worker…");
+
+      const workerReady = await wakeCompressionWorker({
+        onWaiting(seconds) {
+          setProgress(
+            Math.min(5 + seconds, 25),
+            seconds < 5
+              ? "Connecting to compression worker…"
+              : `Worker is starting (free tier — ${seconds}s). First request after idle can take up to 60s…`,
+          );
+        },
+      });
+
+      if (!workerReady) {
+        throw new Error(
+          "Compression worker did not respond in time. Wait a minute and try again — Render free tier sleeps after 15 min idle.",
+        );
+      }
+
+      if (isPdfFile(file)) {
+        setProgress(30, "Uploading PDF to compression worker (Ghostscript)…");
+      } else if (isVideoFile(file)) {
+        setProgress(30, "Uploading video to compression worker (FFmpeg)…");
+      }
+
+      let workerResult;
+      try {
+        workerResult = await compressViaWorker(nativeFd);
+      } catch {
+        throw new Error(
+          "Could not reach the compression worker. It may still be waking up — try again in a minute.",
+        );
+      }
+      stopServerProgressTimer();
+
+      if (!workerResult.ok) {
+        throw new Error(workerResult.error);
+      }
+
+      setProgress(100, "Complete");
+      const savedSizeWorker =
+        workerResult.originalSize - workerResult.compressedSize;
+      const savedPercentWorker =
+        workerResult.originalSize > 0
+          ? (savedSizeWorker / workerResult.originalSize) * 100
+          : 0;
+
+      const persisted = await saveToMyFilesIfLoggedIn({
+        blob: workerResult.blob,
+        originalFile: file,
+        outputName: workerResult.outputName,
+        compressedSize: workerResult.compressedSize,
+        method: workerResult.method,
+        note: workerResult.note,
+      });
+      if (!persisted.savedToAccount) {
+        lastUrlRef.current = persisted.downloadUrl;
+      }
+      setDownloadUrl(persisted.downloadUrl);
+      setResult({
+        originalSize: workerResult.originalSize,
+        compressedSize: workerResult.compressedSize,
+        savedSize: savedSizeWorker,
+        savedPercent: savedPercentWorker,
+        method: userFacingMethod(workerResult.method),
+        note: persisted.note,
+        outputName: workerResult.outputName,
+        blob: workerResult.blob,
+        profile,
+        goal,
+        targetHit:
+          workerResult.compressedSize <=
+          targetBytesFor(workerResult.originalSize),
+        savedToAccount: persisted.savedToAccount,
+      });
+      return;
+    }
 
     let nativeResult;
     try {
@@ -560,8 +654,9 @@ export function CompressWorkbench() {
             common players. Large files may take a few minutes.
             {file && isPdfFile(file) && isProductionHost() && (
               <span className="block mt-2 text-amber-400/90">
-                PDF Ghostscript runs on your Mac only — on clickcompress.com we
-                use browser lossless compression instead.
+                {useDirectCompressionWorker()
+                  ? "PDF Ghostscript runs on the compression worker (Render / self-hosted)."
+                  : "PDF Ghostscript runs on your Mac only — on clickcompress.com we use browser lossless compression instead."}
               </span>
             )}
           </p>

@@ -14,14 +14,23 @@
 
 - Vercel + **Supabase** (Postgres + Storage in one dashboard)
 - **Railway** (Postgres + app hosting, $5 credit/month)
-- **Render** (web service + Postgres free tiers with cold starts)
+- **Render** (web service + Postgres free tiers with cold starts) — see `docs/RENDER-COMPRESSION-WORKER.md` for Ghostscript/FFmpeg worker
+
+## Compression worker (PDF + video on production)
+
+Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker worker on **Render free tier** (no credit card):
+
+1. Follow **`docs/RENDER-COMPRESSION-WORKER.md`**
+2. Set `NEXT_PUBLIC_COMPRESSION_WORKER_URL` on Vercel to your Render URL
+3. Redeploy
 
 ## Architecture in production
 
 ```
-Browser → Vercel (Next.js)
+Browser → Vercel (Next.js UI)
               ├── Neon PostgreSQL  (users, file metadata)
-              └── Cloudflare R2    (encrypted .enc blobs)
+              ├── Cloudflare R2    (encrypted .enc blobs, optional)
+              └── Render worker    (PDF/video via gs + ffmpeg, direct browser upload)
 ```
 
 Local dev without `DATABASE_URL` continues using `.data/` on disk.

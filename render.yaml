@@ -1,0 +1,17 @@
+# Render Blueprint — compression worker (Ghostscript + FFmpeg)
+# Dashboard: New → Blueprint → connect this repo
+services:
+  - type: web
+    name: click-compress-worker
+    runtime: docker
+    dockerfilePath: ./compression-worker/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_MAX_UPLOAD_MB
+        value: "30"
+      - key: WORKER_ALLOWED_ORIGINS
+        value: https://clickcompress.com,https://www.clickcompress.com,http://localhost:3000

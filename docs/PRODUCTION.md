@@ -18,13 +18,11 @@
 
 ## Compression worker (PDF + video on production)
 
-Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker worker on **GCP e2-micro** (always free, no cold start):
+Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker worker on **GCP e2-micro** (always free, always on):
 
 1. Follow **`docs/GCP-COMPRESSION-WORKER.md`**
-2. Set `NEXT_PUBLIC_COMPRESSION_WORKER_URL` on Vercel (e.g. `https://compression.clickcompress.com`)
+2. Set `NEXT_PUBLIC_COMPRESSION_WORKER_URL=https://compression.clickcompress.com` on Vercel
 3. Redeploy
-
-Alternatives: `docs/RENDER-COMPRESSION-WORKER.md`, `docs/ORACLE-COMPRESSION-WORKER.md`
 
 ## Architecture in production
 

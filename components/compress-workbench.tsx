@@ -12,9 +12,9 @@ import {
   userFacingMethod,
 } from "@/lib/user-facing-labels";
 import {
+  checkCompressionWorkerHealth,
   compressViaWorker,
   useDirectCompressionWorker,
-  wakeCompressionWorker,
 } from "@/lib/compression-worker-client";
 import {
   CLOUD_MAX_UPLOAD_BYTES,
@@ -242,26 +242,16 @@ export function CompressWorkbench() {
       const workerMaxBytes = 25 * 1024 * 1024;
       if (file.size > workerMaxBytes) {
         throw new Error(
-          `File is ${formatBytes(file.size)} — Render free worker limit is 25 MB. Try a smaller PDF/video or use Target 40% mode for images.`,
+          `File is ${formatBytes(file.size)} — worker limit is 25 MB. Try a smaller PDF/video or use Target 40% mode for images.`,
         );
       }
 
-      setProgress(5, "Connecting to compression worker…");
+      setProgress(8, "Connecting to GCP compression worker…");
 
-      const workerReady = await wakeCompressionWorker({
-        onWaiting(seconds) {
-          setProgress(
-            Math.min(5 + seconds, 25),
-            seconds < 5
-              ? "Connecting to compression worker…"
-              : `Worker is starting (free tier — ${seconds}s). First request after idle can take up to 60s…`,
-          );
-        },
-      });
-
+      const workerReady = await checkCompressionWorkerHealth();
       if (!workerReady) {
         throw new Error(
-          "Compression worker did not respond in time. Wait a minute and try again — Render free tier sleeps after 15 min idle.",
+          "Could not reach compression.clickcompress.com. Open https://compression.clickcompress.com/health in your browser — if it loads, retry compress. If not, DNS may still be updating (can take up to 24h on some networks).",
         );
       }
 
@@ -661,14 +651,14 @@ export function CompressWorkbench() {
             common players. Large files may take a few minutes.
             {useDirectCompressionWorker() && (
               <span className="block mt-2 text-amber-400/90">
-                Free Render worker: max 25 MB per file. First request after 15
-                min idle may take up to 60s to wake up.
+                GCP worker (always on): max 25 MB per file. PDF uses Ghostscript,
+                video uses FFmpeg on compression.clickcompress.com.
               </span>
             )}
             {file && isPdfFile(file) && isProductionHost() && (
               <span className="block mt-2 text-amber-400/90">
                 {useDirectCompressionWorker()
-                  ? "PDF Ghostscript runs on the compression worker (Render / self-hosted)."
+                  ? "PDF Ghostscript runs on the GCP compression worker."
                   : "PDF Ghostscript runs on your Mac only — on clickcompress.com we use browser lossless compression instead."}
               </span>
             )}

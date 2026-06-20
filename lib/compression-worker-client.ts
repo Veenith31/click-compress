@@ -20,11 +20,6 @@ export type WorkerCompressResult =
     }
   | { ok: false; error: string };
 
-type WakeOptions = {
-  maxWaitMs?: number;
-  onWaiting?: (secondsElapsed: number) => void;
-};
-
 function timeoutSignal(ms: number): AbortSignal {
   if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
     return AbortSignal.timeout(ms);
@@ -39,7 +34,10 @@ function fetchErrorMessage(error: unknown): string {
     return "Compression timed out. Try a smaller file or retry.";
   }
   if (error instanceof TypeError) {
-    return "Network error reaching the worker (CORS, cold start, or file too large). Wait 60s and retry.";
+    return (
+      "Could not reach compression.clickcompress.com. DNS may still be updating on your network — " +
+      "open https://compression.clickcompress.com/health in your browser to verify, then retry."
+    );
   }
   if (error instanceof Error && error.message) {
     return error.message;
@@ -47,38 +45,20 @@ function fetchErrorMessage(error: unknown): string {
   return "Could not reach the compression worker.";
 }
 
-/** Ping /health until the worker responds (handles Render free-tier cold starts). */
-export async function wakeCompressionWorker(
-  options: WakeOptions = {},
-): Promise<boolean> {
+/** Quick health ping — GCP worker is always on (no cold start). */
+export async function checkCompressionWorkerHealth(): Promise<boolean> {
   const base = compressionWorkerUrl();
   if (!base) return false;
 
-  const maxWaitMs = options.maxWaitMs ?? 120_000;
-  const started = Date.now();
-  let attempt = 0;
-
-  while (Date.now() - started < maxWaitMs) {
-    attempt += 1;
-    const secondsElapsed = Math.floor((Date.now() - started) / 1000);
-    options.onWaiting?.(secondsElapsed);
-
-    try {
-      const response = await fetch(`${base}/health`, {
-        cache: "no-store",
-        signal: timeoutSignal(25_000),
-      });
-      if (response.ok) return true;
-    } catch {
-      /* worker sleeping or still starting */
-    }
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(3000 + attempt * 500, 8000)),
-    );
+  try {
+    const response = await fetch(`${base}/health`, {
+      cache: "no-store",
+      signal: timeoutSignal(20_000),
+    });
+    return response.ok;
+  } catch {
+    return false;
   }
-
-  return false;
 }
 
 async function postCompressOnce(
@@ -130,31 +110,9 @@ export async function compressViaWorker(
     return { ok: false, error: "Compression worker URL is not configured." };
   }
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (attempt > 0) {
-      const awake = await wakeCompressionWorker({ maxWaitMs: 90_000 });
-      if (!awake) {
-        return {
-          ok: false,
-          error:
-            "Worker did not wake up for retry. Wait a minute and try again.",
-        };
-      }
-    }
-
-    try {
-      return await postCompressOnce(base, formData);
-    } catch (error) {
-      if (attempt === 0) {
-        continue;
-      }
-      return { ok: false, error: fetchErrorMessage(error) };
-    }
+  try {
+    return await postCompressOnce(base, formData);
+  } catch (error) {
+    return { ok: false, error: fetchErrorMessage(error) };
   }
-
-  return {
-    ok: false,
-    error:
-      "Could not reach the compression worker. Wait 60s and try again (Render free tier cold start).",
-  };
 }

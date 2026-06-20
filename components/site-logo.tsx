@@ -71,7 +71,7 @@ export function SiteLogo({
       />
       {showTitle && (
         <span
-          className={`${BRAND_WORDMARK_CLASS} whitespace-nowrap ${preset.title} ${titleClassName}`}
+          className={`${BRAND_WORDMARK_CLASS} whitespace-nowrap ${preset.title} max-sm:hidden ${titleClassName}`}
         >
           {SITE.brandWordmark}
         </span>

@@ -432,7 +432,7 @@ export function CompressWorkbench() {
         )}
       </div>
 
-      <div className="w-full border border-gray-800 rounded-3xl p-6 sm:p-8 bg-zinc-900/50 backdrop-blur-xl shadow-2xl space-y-5">
+      <div className="w-full border border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 bg-zinc-900/50 backdrop-blur-xl shadow-2xl space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Choose file
@@ -472,7 +472,7 @@ export function CompressWorkbench() {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Mode
@@ -568,14 +568,14 @@ export function CompressWorkbench() {
 
         {result && (
           <div className="p-6 border border-white/10 rounded-2xl bg-black/40">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-500 text-xs uppercase font-bold">
                   Method
                 </p>
                 <p className="text-lg">{result.method}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className="text-emerald-400 text-xs uppercase font-bold">
                   Saved
                 </p>

@@ -110,7 +110,7 @@ export function CompressionHeroAnimation() {
 
   return (
     <div
-      className="relative w-full max-w-lg mx-auto lg:mx-0"
+      className="relative w-full max-w-lg mx-auto lg:mx-0 min-w-0"
       aria-hidden
     >
       <div className="absolute -inset-4 bg-gradient-to-br from-cyan-500/10 via-transparent to-emerald-500/10 rounded-3xl blur-2xl animate-pulse-slow" />
@@ -121,12 +121,12 @@ export function CompressionHeroAnimation() {
           <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-          <span className="ml-2 text-xs text-gray-500 font-mono">
+          <span className="ml-2 text-[10px] sm:text-xs text-gray-500 font-mono truncate">
             click-compress · pipeline
           </span>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Status line */}
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-cyan-400 font-medium truncate">
@@ -138,7 +138,7 @@ export function CompressionHeroAnimation() {
           </div>
 
           {/* Pipeline steps */}
-          <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center justify-between gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
             {(
               [
                 { id: "upload" as Phase, label: "Upload", icon: "↑" },
@@ -151,10 +151,10 @@ export function CompressionHeroAnimation() {
               const active = phaseIndex(phase) >= phaseIndex(node.id);
               const current = phase === node.id;
               return (
-                <div key={node.id} className="flex items-center flex-1 min-w-0">
+                <div key={node.id} className="flex items-center flex-1 min-w-[3.25rem]">
                   <div className="flex flex-col items-center gap-1 flex-1">
                     <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm border transition-all duration-500 ${
+                      className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-xs sm:text-sm border transition-all duration-500 ${
                         current
                           ? "border-cyan-400 bg-cyan-500/20 text-cyan-300 scale-110 shadow-[0_0_20px_rgba(34,211,238,0.35)]"
                           : active
@@ -165,7 +165,7 @@ export function CompressionHeroAnimation() {
                       {node.icon}
                     </div>
                     <span
-                      className={`text-[9px] uppercase tracking-wider ${
+                      className={`text-[8px] sm:text-[9px] uppercase tracking-wider text-center leading-tight ${
                         active ? "text-gray-400" : "text-gray-600"
                       }`}
                     >

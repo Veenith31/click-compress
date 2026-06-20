@@ -78,7 +78,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[88rem] xl:px-8">
-        <div className="flex min-h-[4.25rem] items-center gap-4 xl:min-h-[4.5rem] xl:gap-8">
+        <div className="flex min-h-[3.75rem] items-center gap-2 sm:min-h-[4.25rem] sm:gap-4 xl:min-h-[4.5rem] xl:gap-8">
           <SiteLogo linked priority variant="header" />
 
           <nav
@@ -95,7 +95,7 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5 lg:ml-0 lg:gap-3 lg:border-l lg:border-white/10 lg:pl-5 xl:pl-6">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 lg:ml-0 lg:gap-3 lg:border-l lg:border-white/10 lg:pl-5 xl:pl-6">
             {user ? (
               <>
                 <span
@@ -107,7 +107,7 @@ export function SiteHeader() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="whitespace-nowrap rounded-lg border border-gray-700 px-3 py-2 text-xs text-gray-300 transition-colors hover:border-gray-500 hover:text-white sm:text-sm"
+                  className="whitespace-nowrap rounded-lg border border-gray-700 px-2.5 py-2 text-xs text-gray-300 transition-colors hover:border-gray-500 hover:text-white sm:px-3 sm:text-sm"
                 >
                   Log out
                 </button>
@@ -116,13 +116,13 @@ export function SiteHeader() {
               <>
                 <Link
                   href="/login"
-                  className="whitespace-nowrap rounded-lg px-3 py-2 text-xs text-gray-300 transition-colors hover:text-white sm:text-sm"
+                  className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-xs text-gray-300 transition-colors hover:text-white sm:inline sm:text-sm"
                 >
                   Log in
                 </Link>
                 <Link
                   href="/signup"
-                  className="whitespace-nowrap rounded-lg border border-gray-600 px-3 py-2 text-xs text-white transition-colors hover:bg-white/5 sm:text-sm"
+                  className="hidden whitespace-nowrap rounded-lg border border-gray-600 px-3 py-2 text-xs text-white transition-colors hover:bg-white/5 sm:inline sm:text-sm"
                 >
                   Sign up
                 </Link>
@@ -130,7 +130,7 @@ export function SiteHeader() {
             )}
             <Link
               href="/compress"
-              className="whitespace-nowrap rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-gray-200 sm:px-5 sm:text-sm"
+              className="whitespace-nowrap rounded-lg bg-white px-3 py-2 text-xs font-semibold text-black transition-colors hover:bg-gray-200 sm:px-5 sm:text-sm"
             >
               Compress
             </Link>
@@ -139,7 +139,7 @@ export function SiteHeader() {
       </div>
 
       <nav
-        className="flex gap-2 overflow-x-auto border-t border-white/5 px-4 py-2.5 scrollbar-none lg:hidden sm:px-6"
+        className="flex gap-2 overflow-x-auto border-t border-white/5 px-3 py-2.5 scrollbar-none lg:hidden sm:px-6"
         aria-label="Main mobile"
       >
         {navLinks.map((link) => (
@@ -151,6 +151,12 @@ export function SiteHeader() {
             compact
           />
         ))}
+        {!user && (
+          <>
+            <NavLink href="/login" label="Log in" active={isActive("/login")} compact />
+            <NavLink href="/signup" label="Sign up" active={isActive("/signup")} compact />
+          </>
+        )}
       </nav>
     </header>
   );

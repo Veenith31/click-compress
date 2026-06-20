@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { SiteFooter } from "@/components/site-footer";
@@ -22,6 +22,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
@@ -43,8 +49,12 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: SITE.logoIcon,
-    apple: SITE.logoIcon,
+    icon: [
+      { url: "/logo-icon.png", type: "image/png" },
+      { url: "/logo-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/logo-icon-512.png", sizes: "512x512", type: "image/png" }],
+    shortcut: "/logo-icon.png",
   },
   openGraph: {
     type: "website",

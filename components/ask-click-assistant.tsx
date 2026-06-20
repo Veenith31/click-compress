@@ -285,7 +285,7 @@ function AskClickPanel({
         <button
           type="button"
           onClick={() => onOpenChange(true)}
-          className="fixed bottom-6 right-6 z-[70] group flex items-center gap-2.5 rounded-full border border-cyan-500/30 bg-black/90 px-4 py-3 shadow-[0_0_40px_rgba(34,211,238,0.15)] backdrop-blur-xl transition-all hover:border-cyan-400/50 hover:shadow-[0_0_50px_rgba(34,211,238,0.25)] sm:px-5"
+          className="fixed bottom-4 right-4 z-[70] group flex items-center gap-2.5 rounded-full border border-cyan-500/30 bg-black/90 px-3 py-2.5 shadow-[0_0_40px_rgba(34,211,238,0.15)] backdrop-blur-xl transition-all hover:border-cyan-400/50 hover:shadow-[0_0_50px_rgba(34,211,238,0.25)] sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 max-sm:max-w-[calc(100vw-2rem)]"
           aria-label="Ask Click your questions"
         >
           <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 text-black font-bold text-sm">

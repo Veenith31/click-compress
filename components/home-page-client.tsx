@@ -18,34 +18,34 @@ export function HomePageClient() {
         <div className="absolute top-20 left-1/4 h-64 w-64 rounded-full bg-cyan-500/5 blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-10 right-1/4 h-48 w-48 rounded-full bg-emerald-500/5 blur-3xl animate-pulse-slow" />
 
-        <PageShell className="relative py-12 sm:py-16 lg:pb-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div>
-              <p className="text-sm font-medium text-cyan-400 tracking-wide uppercase animate-float">
+        <PageShell className="relative py-10 sm:py-16 lg:pb-10">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-cyan-400 tracking-wide uppercase animate-float">
                 Intelligent compression platform
               </p>
-              <h1 className="mt-4 max-w-xl text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
+              <h1 className="mt-3 sm:mt-4 max-w-xl text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
                 Shrink files smarter.
-                <span className="block text-gray-500 mt-2 text-2xl sm:text-4xl lg:text-5xl">
+                <span className="block text-gray-500 mt-2 text-xl sm:text-4xl lg:text-5xl">
                   Not just smaller — optimized.
                 </span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg text-gray-400">
+              <p className="mt-4 sm:mt-6 max-w-xl text-base sm:text-lg text-gray-400">
                 {SITE.name} routes each upload to the right compression path for
                 video, PDF, images, and text — automatically. Watch how your
                 file flows through the pipeline below.
               </p>
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
                 <Link
                   href="/compress"
-                  className="rounded-xl bg-white px-6 py-3 text-base font-semibold text-black hover:bg-gray-200 transition-colors"
+                  className="w-full sm:w-auto text-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-black hover:bg-gray-200 transition-colors"
                 >
                   Compress a file
                 </Link>
                 <AskClickHeroButton />
                 <Link
                   href="/how-it-works"
-                  className="rounded-xl border border-white/20 px-6 py-3 text-base font-semibold text-white hover:bg-white/5 transition-colors"
+                  className="w-full sm:w-auto text-center rounded-xl border border-white/20 px-6 py-3 text-base font-semibold text-white hover:bg-white/5 transition-colors"
                 >
                   How it works
                 </Link>

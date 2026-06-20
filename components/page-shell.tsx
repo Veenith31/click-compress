@@ -13,7 +13,7 @@ export function PageShell({
 }: PageShellProps) {
   return (
     <div
-      className={`mx-auto w-full px-4 sm:px-6 py-10 sm:py-16 ${
+      className={`mx-auto w-full px-3 sm:px-6 py-8 sm:py-10 lg:py-16 ${
         narrow ? "max-w-3xl" : "max-w-6xl"
       } ${className}`}
     >

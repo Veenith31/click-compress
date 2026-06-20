@@ -5,10 +5,14 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { useObjectStorage } from "@/lib/env";
+import { isVercelServerless } from "@/lib/server-runtime";
 
-const LOCAL_BLOB_ROOT = path.join(process.cwd(), ".data", "blobs");
+const LOCAL_BLOB_ROOT = isVercelServerless()
+  ? path.join(os.tmpdir(), "click-compress-blobs")
+  : path.join(process.cwd(), ".data", "blobs");
 
 export function blobStorageKey(userId: string, fileId: string): string {
   return `files/${userId}/${fileId}.enc`;

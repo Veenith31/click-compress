@@ -12,6 +12,10 @@ import {
   userFacingMethod,
 } from "@/lib/user-facing-labels";
 import {
+  CLOUD_MAX_UPLOAD_BYTES,
+  isProductionHost,
+} from "@/lib/upload-limits";
+import {
   bestLosslessCompression,
   compressImageTowardTarget,
   compressVideoInBrowser,
@@ -184,6 +188,10 @@ export function CompressWorkbench() {
 
   function usesNativeServerPipeline(): boolean {
     if (!file) return false;
+    if (isProductionHost()) {
+      if (isPdfFile(file)) return false;
+      if (file.size > CLOUD_MAX_UPLOAD_BYTES) return false;
+    }
     if (goal === "high-impact-local") return true;
     if (goal === "strict-lossless") return false;
     return isPdfFile(file);
@@ -215,7 +223,14 @@ export function CompressWorkbench() {
     }
     startServerProgressTimer();
 
-    const nativeResult = await compressNativeAction(nativeFd);
+    let nativeResult;
+    try {
+      nativeResult = await compressNativeAction(nativeFd);
+    } catch {
+      throw new Error(
+        "Cloud server compression failed (file may exceed the 4 MB upload limit). Switch to Target 40% mode or use a smaller file.",
+      );
+    }
     stopServerProgressTimer();
 
     if (!nativeResult.ok) {
@@ -358,7 +373,9 @@ export function CompressWorkbench() {
         targetHit = candidate.data.length <= targetBytes;
         method = userFacingMethod(method);
         note =
-          "Browser-only lossless path used. For video or PDF, switch to High impact local mode.";
+          isProductionHost() && isPdfFile(file)
+            ? "Browser lossless compression on cloud (PDF Ghostscript runs locally on your Mac with npm run dev)."
+            : "Browser-only lossless path used. For video or PDF on your Mac, switch to High impact local mode.";
         if (candidate.method === "store-copy") outputName = file.name;
       }
 
@@ -541,6 +558,12 @@ export function CompressWorkbench() {
           <p className="text-xs text-purple-400/90 rounded-lg border border-purple-900/50 bg-purple-950/20 p-3">
             Uses the high-impact local path. Video outputs stay compatible with
             common players. Large files may take a few minutes.
+            {file && isPdfFile(file) && isProductionHost() && (
+              <span className="block mt-2 text-amber-400/90">
+                PDF Ghostscript runs on your Mac only — on clickcompress.com we
+                use browser lossless compression instead.
+              </span>
+            )}
           </p>
         )}
 

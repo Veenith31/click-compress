@@ -10,6 +10,14 @@ import type { PdfCompressMode } from "@/lib/pdf-ghostscript";
 import { adviseCompressionStrategy } from "@/lib/ai-compression-advisor";
 import { getSessionUser } from "@/lib/auth-server";
 import { requireBinary, resolveBinary } from "@/lib/resolve-binary";
+import {
+  hasNativePdfTools,
+  hasNativeVideoTools,
+  isVercelServerless,
+  serverMaxUploadBytes,
+  serverOutputRoot,
+  serverTempRoot,
+} from "@/lib/server-runtime";
 import { saveUserFile } from "@/lib/user-files-server";
 import { buildQuickTimeFfmpegArgs } from "@/lib/video-ffmpeg-args";
 
@@ -158,6 +166,14 @@ export async function compressNativeAction(
     }
 
     const rawBuffer = Buffer.from(await file.arrayBuffer());
+    if (rawBuffer.length > serverMaxUploadBytes()) {
+      const maxMb = (serverMaxUploadBytes() / (1024 * 1024)).toFixed(0);
+      return {
+        ok: false,
+        error: `File is too large for cloud upload (max ${maxMb} MB on this host). Use a smaller file or switch to browser compression mode.`,
+      };
+    }
+
     const compressMode = String(formData.get("mode") ?? "max");
     const pdfLossy = formData.get("pdfLossy") === "true";
     const useAi = formData.get("useAi") !== "false";
@@ -187,8 +203,8 @@ export async function compressNativeAction(
     const inputBuffer = prepared.buffer;
     const ext = prepared.ext;
     const jobId = randomUUID();
-    const tmpRoot = path.join(process.cwd(), ".tmp-compress");
-    const publicOutRoot = path.join(process.cwd(), "public", "generated");
+    const tmpRoot = path.join(serverTempRoot(), jobId);
+    const publicOutRoot = serverOutputRoot();
     fs.mkdirSync(tmpRoot, { recursive: true });
     fs.mkdirSync(publicOutRoot, { recursive: true });
 
@@ -208,7 +224,7 @@ export async function compressNativeAction(
     let resultAiNote = aiNote;
 
     if ([".mp4", ".mov", ".mkv", ".avi"].includes(ext)) {
-      if (!hasTool("ffmpeg")) {
+      if (!hasNativeVideoTools()) {
         return {
           ok: false,
           error:
@@ -236,11 +252,11 @@ export async function compressNativeAction(
           ? "Video re-encoded for smaller size with broad device compatibility."
           : "Video re-encoded for maximum player compatibility.";
     } else if (ext === ".pdf") {
-      if (!hasTool("gs")) {
+      if (!hasNativePdfTools()) {
         return {
           ok: false,
           error:
-            "PDF optimization is unavailable on this server. Contact your administrator.",
+            "PDF optimization is not available on cloud hosting (Ghostscript is not installed). Compress this PDF locally at clickcompress.com on your Mac, or use a file under 4 MB with browser mode.",
         };
       }
       outputName = `${safeBase}_compressed.pdf`;
@@ -413,28 +429,36 @@ export async function compressNativeAction(
     const compressedSize = sizeOf(outputPath);
     const sessionUser = await getSessionUser();
 
-    let downloadUrl = `/generated/${path.basename(outputPath)}`;
+    let downloadUrl = isVercelServerless()
+      ? `/api/compress-output/${encodeURIComponent(path.basename(outputPath))}`
+      : `/generated/${path.basename(outputPath)}`;
     let savedToAccount = false;
     let userFileId: string | undefined;
 
     if (sessionUser) {
-      const record = await saveUserFile({
-        userId: sessionUser.id,
-        plainBuffer: fs.readFileSync(outputPath),
-        originalName: file.name,
-        outputName,
-        originalSize,
-        compressedSize,
-        method,
-        note: note.trim() || undefined,
-      });
-      savedToAccount = true;
-      userFileId = record.id;
-      downloadUrl = `/api/my-files/${record.id}/download`;
       try {
-        fs.unlinkSync(outputPath);
+        const record = await saveUserFile({
+          userId: sessionUser.id,
+          plainBuffer: fs.readFileSync(outputPath),
+          originalName: file.name,
+          outputName,
+          originalSize,
+          compressedSize,
+          method,
+          note: note.trim() || undefined,
+        });
+        savedToAccount = true;
+        userFileId = record.id;
+        downloadUrl = `/api/my-files/${record.id}/download`;
+        try {
+          fs.unlinkSync(outputPath);
+        } catch {
+          /* keep public copy if cleanup fails */
+        }
       } catch {
-        /* keep public copy if cleanup fails */
+        downloadUrl = `/generated/${path.basename(outputPath)}`;
+        note +=
+          " Could not save to your account — download below. Set up file storage (R2) on production.";
       }
     }
 

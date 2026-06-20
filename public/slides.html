@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Click-Compress — Project Slides</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        font-family: Georgia, "Times New Roman", serif;
+        background: #f5f5f0;
+        color: #1a1a1a;
+      }
+
+      .deck {
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .slide {
+        display: none;
+        height: 100%;
+        padding: 3rem 4rem;
+        max-width: 900px;
+        margin: 0 auto;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .slide.active {
+        display: flex;
+      }
+
+      h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        border-bottom: 2px solid #1a1a1a;
+        padding-bottom: 0.5rem;
+      }
+
+      p {
+        font-size: 1.15rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      .subtitle {
+        font-size: 1.25rem;
+        color: #444;
+      }
+
+      ul {
+        margin: 0.5rem 0 0 1.25rem;
+        font-size: 1.1rem;
+        line-height: 1.7;
+      }
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1rem;
+        margin-top: 0.5rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid #ccc;
+      }
+
+      th {
+        font-weight: 700;
+      }
+
+      .footer-note {
+        margin-top: 2rem;
+        font-size: 0.95rem;
+        color: #555;
+      }
+
+      .nav {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 2rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      .nav button {
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.75rem;
+        margin-left: 0.25rem;
+        border: 1px solid #999;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .nav button:hover {
+        background: #eee;
+      }
+
+      .counter {
+        position: fixed;
+        bottom: 1.5rem;
+        left: 2rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      @media print {
+        .slide {
+          display: flex !important;
+          page-break-after: always;
+          height: auto;
+          min-height: 100vh;
+        }
+        .nav,
+        .counter {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="deck" id="deck">
+      <!-- Slide 1 -->
+      <section class="slide active">
+        <h1>Click-Compress</h1>
+        <p class="subtitle">Smart compression platform for every file type</p>
+        <p style="margin-top: 2rem">
+          A web platform that shrinks video, PDF, images, and documents using
+          the right algorithm for each format — not a one-size-fits-all zip tool.
+        </p>
+        <p class="footer-note">Project overview · 6 slides</p>
+      </section>
+
+      <!-- Slide 2 -->
+      <section class="slide">
+        <h2>The problem</h2>
+        <ul>
+          <li>Files are too large to share, upload, or store easily.</li>
+          <li>Generic compressors treat all files the same and save little on media.</li>
+          <li>Cloud tools raise privacy concerns for personal and work documents.</li>
+          <li>Users want clear savings (e.g. ~40%) without broken or unplayable output.</li>
+        </ul>
+      </section>
+
+      <!-- Slide 3 -->
+      <section class="slide">
+        <h2>Our solution</h2>
+        <p>
+          <strong>Click-Compress</strong> inspects each upload and routes it to a
+          specialized pipeline:
+        </p>
+        <ul>
+          <li><strong>Target 40%</strong> — re-encode when needed to hit size goals.</li>
+          <li><strong>High impact local</strong> — ffmpeg and Ghostscript on your machine.</li>
+          <li><strong>Strict lossless</strong> — byte-perfect restore for archives and text.</li>
+        </ul>
+        <p class="footer-note">
+          Browser-first where possible; native tools for video and PDF.
+        </p>
+      </section>
+
+      <!-- Slide 4 -->
+      <section class="slide">
+        <h2>What we compress</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Typical savings</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Video (MP4, MOV…)</td>
+              <td>H.264 / H.265 + AAC</td>
+              <td>40–80%</td>
+            </tr>
+            <tr>
+              <td>PDF</td>
+              <td>Ghostscript profiles</td>
+              <td>30–50%</td>
+            </tr>
+            <tr>
+              <td>Images</td>
+              <td>WebP / JPEG sweep</td>
+              <td>35–60%</td>
+            </tr>
+            <tr>
+              <td>Office & text</td>
+              <td>Brotli / Gzip</td>
+              <td>20–90%</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Slide 5 -->
+      <section class="slide">
+        <h2>How it works</h2>
+        <ol style="margin-left: 1.25rem; font-size: 1.1rem; line-height: 1.8">
+          <li><strong>Upload</strong> — user picks file, goal, and profile.</li>
+          <li><strong>Analyze</strong> — dispatcher detects type (video, PDF, image, text…).</li>
+          <li><strong>Compress</strong> — best engine runs (browser or native).</li>
+          <li><strong>Download</strong> — optimized file with savings stats and method shown.</li>
+        </ol>
+        <p class="footer-note">
+          Video outputs are validated for QuickTime compatibility before download.
+        </p>
+      </section>
+
+      <!-- Slide 6 -->
+      <section class="slide">
+        <h2>Technology & summary</h2>
+        <p><strong>Stack:</strong> Next.js, TypeScript, brotli-wasm, fflate, ffmpeg, Ghostscript</p>
+        <ul>
+          <li>Multi-page platform: Home, Capabilities, Compress, How it works, About</li>
+          <li>Local processing — no external compression API required</li>
+          <li>Honest reporting when files are already highly compressed</li>
+        </ul>
+        <p style="margin-top: 1.5rem">
+          <strong>Goal:</strong> Make large files smaller, playable, and shareable — simply.
+        </p>
+        <p class="footer-note">click-compress · localhost:3000 (dev)</p>
+      </section>
+    </div>
+
+    <div class="counter" id="counter">1 / 6</div>
+    <div class="nav">
+      <button type="button" id="prev">Previous</button>
+      <button type="button" id="next">Next</button>
+    </div>
+
+    <script>
+      const slides = document.querySelectorAll(".slide");
+      let index = 0;
+
+      function show(i) {
+        index = (i + slides.length) % slides.length;
+        slides.forEach((s, n) => s.classList.toggle("active", n === index));
+        document.getElementById("counter").textContent =
+          index + 1 + " / " + slides.length;
+      }
+
+      document.getElementById("prev").onclick = () => show(index - 1);
+      document.getElementById("next").onclick = () => show(index + 1);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " ") {
+          e.preventDefault();
+          show(index + 1);
+        }
+        if (e.key === "ArrowLeft") {
+          show(index - 1);
+        }
+      });
+    </script>
+  </body>
+</html>

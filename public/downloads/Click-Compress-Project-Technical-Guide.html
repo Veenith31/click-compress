@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Click-Compress — Project Technical Guide</title>
+  <style>
+    @page { margin: 18mm 16mm; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #111;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 12mm;
+    }
+    h1 { font-size: 22pt; border-bottom: 2px solid #0891b2; padding-bottom: 6px; margin-top: 0; }
+    h2 { font-size: 15pt; color: #0e7490; margin-top: 22px; page-break-after: avoid; }
+    h3 { font-size: 12pt; margin-top: 14px; }
+    p { margin: 8px 0; text-align: justify; }
+    code { font-family: Consolas, monospace; font-size: 9.5pt; background: #f4f4f5; padding: 1px 4px; border-radius: 3px; }
+    pre.code-block {
+      background: #18181b;
+      color: #e4e4e7;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 9pt;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+    table.data-table th, table.data-table td {
+      border: 1px solid #d4d4d8;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.data-table th { background: #ecfeff; font-weight: bold; }
+    ul { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+    strong { color: #000; }
+  </style>
+</head>
+<body>
+<h1>Click-Compress — Project Technical Guide</h1>
+<p><strong>Project:</strong> Click-Compress (lossless-compressor)  </p>
+<p><strong>Type:</strong> Full-stack Next.js web application  </p>
+<p><strong>Purpose:</strong> Format-aware file compression targeting ~40% savings with browser and native engines.</p>
+<hr />
+<h2>1. What This Project Does</h2>
+<p>Click-Compress is a smart compression platform that picks the right algorithm per file type instead of using one generic ZIP pass. It includes:</p>
+<ul><li>A marketing site (Home, Capabilities, How it works, About, Downloads)</li>
+<li>A compression workbench (upload, choose goal/mode, compress, download)</li>
+<li>User authentication (sign up, log in, log out)</li>
+<li>Server-side compression for heavy formats (video, PDF, images via native tools)</li>
+<li>Browser-side compression for text, images (lossy), and lossless algorithms</li>
+</ul>
+<hr />
+<h2>2. Technology Stack</h2>
+<table class="data-table">
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Role</th>
+</tr>
+<tr>
+<td>Framework</td>
+<td><strong>Next.js 16</strong> (App Router)</td>
+<td>Pages, routing, Server Actions</td>
+</tr>
+<tr>
+<td>UI</td>
+<td><strong>React 19</strong>, <strong>Tailwind CSS 4</strong></td>
+<td>Components and styling</td>
+</tr>
+<tr>
+<td>Language</td>
+<td><strong>TypeScript</strong></td>
+<td>Type-safe app and library code</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td><strong>Node crypto (scrypt)</strong> + HTTP-only cookies</td>
+<td>Local user store in <code>.data/users.json</code></td>
+</tr>
+<tr>
+<td>Build</td>
+<td><strong>Webpack</strong> (via <code>next dev/build --webpack</code>)</td>
+<td>Bundling (Turbopack disabled for wasm/ffmpeg)</td>
+</tr>
+</table>
+<hr />
+<h2>3. NPM Libraries — What Each One Does</h2>
+<h3>Runtime dependencies (used in the app)</h3>
+<table class="data-table">
+<tr>
+<th>Package</th>
+<th>Used for</th>
+</tr>
+<tr>
+<td><strong>next</strong></td>
+<td>App framework, Server Actions, API routes</td>
+</tr>
+<tr>
+<td><strong>react</strong> / <strong>react-dom</strong></td>
+<td>UI components</td>
+</tr>
+<tr>
+<td><strong>brotli-wasm</strong></td>
+<td>Brotli compression/decompression in the browser (WASM)</td>
+</tr>
+<tr>
+<td><strong>fflate</strong></td>
+<td>Gzip/deflate in the browser (<code>gzipSync</code>, <code>gunzipSync</code>)</td>
+</tr>
+<tr>
+<td><strong>pako</strong></td>
+<td>Additional deflate support (if referenced)</td>
+</tr>
+<tr>
+<td><strong>browser-image-compression</strong></td>
+<td>Optional image helpers</td>
+</tr>
+<tr>
+<td><strong>jxl-wasm</strong></td>
+<td>JPEG XL WASM support (available for future image paths)</td>
+</tr>
+<tr>
+<td><strong>@ffmpeg/ffmpeg</strong> + <strong>@ffmpeg/util</strong></td>
+<td>In-browser video transcoding fallback (ffmpeg.wasm)</td>
+</tr>
+</table>
+<h3>Dev dependencies (build / docs)</h3>
+<table class="data-table">
+<tr>
+<th>Package</th>
+<th>Used for</th>
+</tr>
+<tr>
+<td><strong>docx</strong></td>
+<td>Generates Word project slides (<code>generate-deck.mjs</code>)</td>
+</tr>
+<tr>
+<td><strong>pptxgenjs</strong></td>
+<td>Legacy slide generation (superseded by template merge for PPTX)</td>
+</tr>
+<tr>
+<td><strong>sharp</strong></td>
+<td>Snapshot image processing in deck scripts</td>
+</tr>
+<tr>
+<td><strong>tailwindcss</strong></td>
+<td>Utility CSS</td>
+</tr>
+<tr>
+<td><strong>eslint</strong> / <strong>eslint-config-next</strong></td>
+<td>Linting</td>
+</tr>
+</table>
+<h3>Native tools (not npm — must be installed on the machine)</h3>
+<table class="data-table">
+<tr>
+<th>Tool</th>
+<th>Install</th>
+<th>Used for</th>
+</tr>
+<tr>
+<td><strong>ffmpeg</strong></td>
+<td><code>brew install ffmpeg</code></td>
+<td>Video H.264/H.265 transcoding, WebP/JPEG image passes</td>
+</tr>
+<tr>
+<td><strong>ffprobe</strong></td>
+<td>(bundled with ffmpeg)</td>
+<td>Validates encoded video before download</td>
+</tr>
+<tr>
+<td><strong>ghostscript</strong> (<code>gs</code>)</td>
+<td><code>brew install ghostscript</code></td>
+<td><strong>Lossy PDF</strong> recompression (30–40% on image-heavy PDFs)</td>
+</tr>
+<tr>
+<td><strong>sips</strong></td>
+<td>macOS built-in</td>
+<td>JPEG quality passes on macOS when ffmpeg unavailable</td>
+</tr>
+</table>
+<hr />
+<h2>4. Compression Goals &amp; Modes</h2>
+<h3>Compression goals (user selects in workbench)</h3>
+<table class="data-table">
+<tr>
+<th>Goal</th>
+<th>Where it runs</th>
+<th>Behavior</th>
+</tr>
+<tr>
+<td><strong>Target 40%</strong> (recommended)</td>
+<td>Browser + server for PDF</td>
+<td>Lossy when needed (~40% target). PDFs use Ghostscript on server. Images use WebP/JPEG sweeps. Other files use best lossless in browser.</td>
+</tr>
+<tr>
+<td><strong>High impact local</strong></td>
+<td>Server (native binaries)</td>
+<td>ffmpeg for video, Ghostscript for PDF, sips/ffmpeg for images, Brotli/Gzip for text/office</td>
+</tr>
+<tr>
+<td><strong>Strict lossless</strong></td>
+<td>Browser</td>
+<td>Brotli, Gzip, RLE, LZW — exact byte restore</td>
+</tr>
+</table>
+<h3>Compression mode (Fast / Balanced / Maximum)</h3>
+<ul><li>Affects <strong>browser</strong> lossless quality steps and <strong>image</strong> quality sweeps</li>
+<li>For <strong>PDF</strong>, lossy runs always use <strong>Maximum</strong> Ghostscript profiles when targeting 40% savings</li>
+<li>For <strong>video</strong>, affects ffmpeg preset/CRF style via <code>video-ffmpeg-args.ts</code></li>
+</ul>
+<h3>Optimization profile (Smart / Text / Media)</h3>
+<ul><li><strong>Smart:</strong> All algorithms as appropriate  </li>
+<li><strong>Text:</strong> Favors Brotli/RLE/LZW; skips heavy media assumptions  </li>
+<li><strong>Media:</strong> Accept hints for video/audio/image uploads  </li>
+</ul>
+<hr />
+<h2>5. What Works for What — Format Matrix</h2>
+<table class="data-table">
+<tr>
+<th>File type</th>
+<th>Best goal</th>
+<th>Engine</th>
+<th>Method</th>
+<th>Typical savings</th>
+</tr>
+<tr>
+<td><strong>MP4, MOV, MKV, AVI</strong></td>
+<td>High impact local</td>
+<td>ffmpeg (server)</td>
+<td>H.264 + H.265 (hvc1), pick smallest</td>
+<td>40–80%</td>
+</tr>
+<tr>
+<td><strong>Video (no ffmpeg)</strong></td>
+<td>High impact local</td>
+<td>ffmpeg.wasm (browser)</td>
+<td>H.264 + AAC fallback</td>
+<td>Varies</td>
+</tr>
+<tr>
+<td><strong>PDF</strong></td>
+<td>Target 40% or High impact local</td>
+<td>Ghostscript (server)</td>
+<td>Lossy image downsample + JPEG re-encode</td>
+<td>30–40% (image-heavy); less for text-only</td>
+</tr>
+<tr>
+<td><strong>JPEG / PNG / WebP</strong></td>
+<td>Target 40%</td>
+<td>Canvas (browser)</td>
+<td>WebP/JPEG quality + scale sweeps</td>
+<td>35–60%</td>
+</tr>
+<tr>
+<td><strong>CSV, TXT, JSON, XML, MD</strong></td>
+<td>Any / High impact local</td>
+<td>Brotli (browser or Node zlib)</td>
+<td>Brotli Q11</td>
+<td>20–90%</td>
+</tr>
+<tr>
+<td><strong>DOCX, PPTX, XLSX, etc.</strong></td>
+<td>High impact local</td>
+<td>Node zlib</td>
+<td>Brotli or Gzip on raw bytes</td>
+<td>20–90%</td>
+</tr>
+<tr>
+<td><strong>Pre-compressed .br / .gz</strong></td>
+<td>Any</td>
+<td>Decompress then recompress inner content</td>
+<td>Wrapper unpack first</td>
+<td>Depends on inner file</td>
+</tr>
+</table>
+<h3>Why PDF was only ~4% before</h3>
+<ul><li>Browser <strong>lossless</strong> path (Brotli/Gzip on PDF bytes) barely shrinks already-compressed PDF streams.  </li>
+<li>Fix: route PDFs to <strong>Ghostscript lossy</strong> with <code>PassThroughJPEGImages=false</code> and aggressive DPI/JPEG quality.</li>
+</ul>
+<hr />
+<h2>6. Project File Structure — What Each File Does</h2>
+<h3><code>app/</code> — Next.js pages and server actions</h3>
+<table class="data-table">
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>app/layout.tsx</code></td>
+<td>Root layout: fonts, <code>AuthProvider</code>, header, footer</td>
+</tr>
+<tr>
+<td><code>app/page.tsx</code></td>
+<td>Home / landing page</td>
+</tr>
+<tr>
+<td><code>app/compress/page.tsx</code></td>
+<td>Compression workbench route</td>
+</tr>
+<tr>
+<td><code>app/capabilities/page.tsx</code></td>
+<td>Capabilities marketing page</td>
+</tr>
+<tr>
+<td><code>app/how-it-works/page.tsx</code></td>
+<td>Pipeline explanation</td>
+</tr>
+<tr>
+<td><code>app/about/page.tsx</code></td>
+<td>About the project</td>
+</tr>
+<tr>
+<td><code>app/downloads/page.tsx</code></td>
+<td>Download slides + technical guide PDF</td>
+</tr>
+<tr>
+<td><code>app/login/page.tsx</code></td>
+<td>Login form</td>
+</tr>
+<tr>
+<td><code>app/signup/page.tsx</code></td>
+<td>Sign up form</td>
+</tr>
+<tr>
+<td><code>app/actions.ts</code></td>
+<td><strong>Server Action</strong> <code>compressNativeAction</code> — ffmpeg, Ghostscript, Brotli, office</td>
+</tr>
+<tr>
+<td><code>app/actions/auth.ts</code></td>
+<td>Server Actions: signup, login, logout, getCurrentUser</td>
+</tr>
+<tr>
+<td><code>app/globals.css</code></td>
+<td>Global styles, progress animation</td>
+</tr>
+<tr>
+<td><code>next.config.ts</code></td>
+<td>Webpack, 100MB Server Action body limit</td>
+</tr>
+</table>
+<h3><code>components/</code> — React UI</h3>
+<table class="data-table">
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>components/compress-workbench.tsx</code></td>
+<td>Main upload UI, progress %, dispatches browser vs server compression</td>
+</tr>
+<tr>
+<td><code>components/site-header.tsx</code></td>
+<td>Navigation, auth links, logout</td>
+</tr>
+<tr>
+<td><code>components/site-footer.tsx</code></td>
+<td>Footer</td>
+</tr>
+<tr>
+<td><code>components/page-shell.tsx</code></td>
+<td>Page width/padding wrapper</td>
+</tr>
+<tr>
+<td><code>components/auth-provider.tsx</code></td>
+<td>React context for logged-in user</td>
+</tr>
+<tr>
+<td><code>components/auth-form.tsx</code></td>
+<td>Login/signup forms with Server Actions</td>
+</tr>
+</table>
+<h3><code>lib/</code> — Core logic</h3>
+<table class="data-table">
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>lib/compression-engine.ts</code></td>
+<td><strong>Browser compression:</strong> Brotli, Gzip, RLE, LZW, image sweeps, ffmpeg.wasm video</td>
+</tr>
+<tr>
+<td><code>lib/pdf-ghostscript.ts</code></td>
+<td>Ghostscript CLI argument profiles (lossy PDF)</td>
+</tr>
+<tr>
+<td><code>lib/pdf-compress-server.ts</code></td>
+<td>Runs multiple GS profiles, picks smallest, optional 2nd pass</td>
+</tr>
+<tr>
+<td><code>lib/video-ffmpeg-args.ts</code></td>
+<td>QuickTime-safe ffmpeg arguments (H.264/H.265 hvc1)</td>
+</tr>
+<tr>
+<td><code>lib/resolve-binary.ts</code></td>
+<td>Finds <code>ffmpeg</code>/<code>gs</code> in PATH (Homebrew, etc.)</td>
+</tr>
+<tr>
+<td><code>lib/auth-server.ts</code></td>
+<td>User store, password hashing, session cookies</td>
+</tr>
+<tr>
+<td><code>lib/site-content.ts</code></td>
+<td>Marketing copy, nav links, capabilities text</td>
+</tr>
+</table>
+<h3><code>scripts/</code> — CLI utilities</h3>
+<table class="data-table">
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>scripts/generate-deck.mjs</code></td>
+<td>Builds PPTX (from internship template) + DOCX slides</td>
+</tr>
+<tr>
+<td><code>scripts/merge-internship-template.py</code></td>
+<td>Merges <code>Intership_Final.pptx</code> layout with project content</td>
+</tr>
+<tr>
+<td><code>scripts/style-pptx-borders-fonts.py</code></td>
+<td>Page borders + Times New Roman on deck</td>
+</tr>
+<tr>
+<td><code>scripts/generate-snapshots.mjs</code></td>
+<td>UI snapshot PNGs for slides</td>
+</tr>
+<tr>
+<td><code>scripts/generate-project-guide.mjs</code></td>
+<td><strong>This technical guide</strong> → PDF</td>
+</tr>
+<tr>
+<td><code>scripts/compress-local.mjs</code></td>
+<td>CLI compress without the web UI</td>
+</tr>
+</table>
+<h3><code>public/</code> — Static assets</h3>
+<table class="data-table">
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>public/downloads/</code></td>
+<td>Generated slides, technical guide PDF</td>
+</tr>
+<tr>
+<td><code>public/downloads/snapshots/</code></td>
+<td>Slide screenshot images</td>
+</tr>
+<tr>
+<td><code>public/downloads/templates/</code></td>
+<td>Internship PPTX template</td>
+</tr>
+<tr>
+<td><code>public/generated/</code></td>
+<td>Temporary compressed outputs from server (download URLs)</td>
+</tr>
+<tr>
+<td><code>public/slides.html</code></td>
+<td>Simple HTML slide deck (optional)</td>
+</tr>
+</table>
+<h3>Data / temp (gitignored)</h3>
+<table class="data-table">
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+<tr>
+<td><code>.data/users.json</code></td>
+<td>Registered users (auth)</td>
+</tr>
+<tr>
+<td><code>.tmp-compress/</code></td>
+<td>Server-side temp files during compression</td>
+</tr>
+</table>
+<hr />
+<h2>7. Compression Flow (How Code Runs)</h2>
+<h3>Path A — Browser (<code>compress-workbench</code> → <code>compression-engine.ts</code>)</h3>
+<p>1. User selects file and goal (not PDF/video native path).  </p>
+<p>2. File read as <code>Uint8Array</code>.  </p>
+<p>3. <code>bestLosslessCompression()</code> tries Gzip → Brotli → RLE → LZW; picks smallest.  </p>
+<p>4. For images + Target 40%: <code>compressImageTowardTarget()</code> sweeps WebP/JPEG quality.  </p>
+<p>5. Result blob → download via object URL.</p>
+<h3>Path B — Server (<code>compress-workbench</code> → <code>compressNativeAction</code> in <code>actions.ts</code>)</h3>
+<p>1. FormData uploaded to Server Action (up to 100MB).  </p>
+<p>2. File written to <code>.tmp-compress/</code>.  </p>
+<p>3. Extension detected; routed to handler:  </p>
+<p>   - Video → ffmpeg H.264 + H.265, ffprobe validate, smallest wins  </p>
+<p>   - PDF → <code>compressPdfAggressive()</code> in <code>pdf-compress-server.ts</code>  </p>
+<p>   - JPEG → sips or ffmpeg quality passes  </p>
+<p>   - PNG/etc. → ffmpeg WebP sweep  </p>
+<p>   - Text/office → Node Brotli/Gzip  </p>
+<p>4. Output copied to <code>public/generated/</code>; URL returned to client.</p>
+<h3>Path C — PDF specifically (lossy)</h3>
+<p>1. <code>pdfProfilesForMode()</code> builds Ghostscript argument sets.  </p>
+<p>2. Each profile runs <code>gs -sDEVICE=pdfwrite</code> with downsampling + JPEG encode.  </p>
+<p>3. Smallest valid PDF wins; if &amp;lt;30% saved, second pass with extreme profile.  </p>
+<p>4. Key flags: <code>PassThroughJPEGImages=false</code>, low DPI, low <code>JPEGQ</code>.</p>
+<hr />
+<h2>8. Authentication</h2>
+<table class="data-table">
+<tr>
+<th>Piece</th>
+<th>Location</th>
+<th>Behavior</th>
+</tr>
+<tr>
+<td>Sign up</td>
+<td><code>app/signup</code> + <code>signupAction</code></td>
+<td>Creates user in <code>.data/users.json</code>, sets session cookie</td>
+</tr>
+<tr>
+<td>Log in</td>
+<td><code>app/login</code> + <code>loginAction</code></td>
+<td>Verifies scrypt password hash</td>
+</tr>
+<tr>
+<td>Log out</td>
+<td>Header button + <code>logoutAction</code></td>
+<td>Clears <code>sc_session</code> cookie</td>
+</tr>
+<tr>
+<td>Session</td>
+<td><code>lib/auth-server.ts</code></td>
+<td>HMAC-signed cookie, 7-day expiry</td>
+</tr>
+</table>
+<p>Set <code>AUTH_SECRET</code> in production <code>.env</code> for secure session signing.</p>
+<hr />
+<h2>9. Key Commands</h2>
+<pre class="code-block"><code>
+npm run dev              # Start dev server (localhost:3000)
+
+npm run build            # Production build
+
+npm run generate:deck    # Regenerate PPTX + DOCX slides
+
+npm run generate:guide   # Regenerate this technical guide PDF
+
+npm run compress:local   # CLI compression test
+
+</code></pre>
+<p><strong>Required for full features:</strong></p>
+<pre class="code-block"><code>
+brew install ffmpeg ghostscript
+
+</code></pre>
+<hr />
+<h2>10. Summary</h2>
+<p>Click-Compress combines a <strong>Next.js UI</strong>, <strong>browser WASM/JS codecs</strong>, and <strong>native CLI tools</strong> (ffmpeg, Ghostscript) to compress different file types appropriately. The most important design choice is <strong>format-aware routing</strong>: video → ffmpeg, PDF → lossy Ghostscript, images → canvas lossy, text → Brotli — instead of one algorithm for everything.</p>
+<hr />
+<p>*Generated for the Click-Compress / lossless-compressor repository.*</p>
+</body>
+</html>

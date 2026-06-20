@@ -39,24 +39,58 @@ function compressPdf(inputPath, outPath) {
 }
 
 function compressVideo(inputPath, outPath) {
-  run("ffmpeg", [
-    "-y",
-    "-i",
-    inputPath,
-    "-c:v",
-    "libx264",
-    "-preset",
-    "ultrafast",
-    "-crf",
-    "28",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    outPath,
-  ]);
+  const inputSize = sizeOf(inputPath);
+  const attempts = [
+    { scale: "min(1280\\,iw)", crf: "28", audio: "96k" },
+    { scale: "min(960\\,iw)", crf: "32", audio: "64k" },
+    { scale: "min(720\\,iw)", crf: "34", audio: "64k" },
+  ];
+
+  let smallestSize = inputSize;
+  let smallestPath = "";
+
+  for (const attempt of attempts) {
+    const trialPath = `${outPath}.try`;
+    run("ffmpeg", [
+      "-y",
+      "-i",
+      inputPath,
+      "-vf",
+      `scale='${attempt.scale}':-2`,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      attempt.crf,
+      "-c:a",
+      "aac",
+      "-b:a",
+      attempt.audio,
+      "-movflags",
+      "+faststart",
+      trialPath,
+    ]);
+    const trialSize = sizeOf(trialPath);
+    if (trialSize < smallestSize) {
+      if (smallestPath && fs.existsSync(smallestPath)) {
+        fs.unlinkSync(smallestPath);
+      }
+      smallestSize = trialSize;
+      smallestPath = trialPath;
+    } else {
+      fs.unlinkSync(trialPath);
+    }
+    if (smallestSize < inputSize * 0.95) {
+      break;
+    }
+  }
+
+  if (smallestPath) {
+    fs.renameSync(smallestPath, outPath);
+  } else {
+    fs.copyFileSync(inputPath, outPath);
+  }
 }
 
 export async function compressUploadedFile(file) {
@@ -113,12 +147,20 @@ export async function compressUploadedFile(file) {
         ? (((originalSize - compressedSize) / originalSize) * 100).toFixed(1)
         : "0";
 
+    let finalNote = note;
+    if (ext !== ".pdf" && compressedSize >= originalSize) {
+      finalNote =
+        "Video was already heavily compressed (e.g. WhatsApp). Kept similar quality — re-encoding would not reduce size.";
+    } else {
+      finalNote = `${note} Saved ${savedPct}%.`;
+    }
+
     return {
       outputPath,
       tmpRoot,
       outputName,
       method,
-      note: `${note} Saved ${savedPct}%.`,
+      note: finalNote,
       originalSize,
       compressedSize,
       mimeType: ext === ".pdf" ? "application/pdf" : "video/mp4",

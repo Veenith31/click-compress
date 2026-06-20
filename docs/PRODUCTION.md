@@ -18,11 +18,13 @@
 
 ## Compression worker (PDF + video on production)
 
-Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker worker on **Render free tier** (no credit card):
+Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker worker on **GCP e2-micro** (always free, no cold start):
 
-1. Follow **`docs/RENDER-COMPRESSION-WORKER.md`**
-2. Set `NEXT_PUBLIC_COMPRESSION_WORKER_URL` on Vercel to your Render URL
+1. Follow **`docs/GCP-COMPRESSION-WORKER.md`**
+2. Set `NEXT_PUBLIC_COMPRESSION_WORKER_URL` on Vercel (e.g. `https://compression.clickcompress.com`)
 3. Redeploy
+
+Alternatives: `docs/RENDER-COMPRESSION-WORKER.md`, `docs/ORACLE-COMPRESSION-WORKER.md`
 
 ## Architecture in production
 
@@ -30,7 +32,7 @@ Vercel cannot run Ghostscript/FFmpeg or accept large uploads. Deploy the Docker 
 Browser → Vercel (Next.js UI)
               ├── Neon PostgreSQL  (users, file metadata)
               ├── Cloudflare R2    (encrypted .enc blobs, optional)
-              └── Render worker    (PDF/video via gs + ffmpeg, direct browser upload)
+              └── GCP worker       (PDF/video via gs + ffmpeg, direct browser upload)
 ```
 
 Local dev without `DATABASE_URL` continues using `.data/` on disk.

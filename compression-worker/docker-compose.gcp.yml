@@ -1,0 +1,12 @@
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: compression-worker/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      PORT: 8080
+      WORKER_MAX_UPLOAD_MB: 25
+      WORKER_ALLOWED_ORIGINS: https://clickcompress.com,https://www.clickcompress.com,http://localhost:3000
+    restart: unless-stopped

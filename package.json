@@ -21,6 +21,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@neondatabase/serverless": "^1.1.0",
+    "@vercel/analytics": "^2.0.1",
     "brotli-wasm": "^3.0.1",
     "browser-image-compression": "^2.0.2",
     "drizzle-orm": "^0.45.2",

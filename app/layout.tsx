@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/components/auth-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -108,6 +109,7 @@ export default async function RootLayout({
           <main className="flex-1">{children}</main>
           <SiteFooter />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
